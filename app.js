@@ -5,13 +5,26 @@
 
 var express = require('express')
 var nano = require('nano')('http://localhost:5984');
-var couchdb = nano.use('metal-compass');
+nano.db.list(function(err,body){
+  found=false;
+  body.forEach(function(db){
+    console.log(db);
+    if(db.name =='metal-compass'){found == true};
+  });
+  if(!found){
+    nano.db.create('metal-compass', function(err,body){
+      if(err){throw new Error('can\' create metal-compass db');};
+    });
+  };
+  var couchdb = nano.use('metal-compass');
+});
+
 var app = module.exports = express.createServer();
 
 // Configuration
 
 app.configure(function(){
-  app.set('views', __dirname + '/views');
+  app.set('views', __dirname);
   app.set('view options', {layout:false});
   app.set('view engine', 'jade');
   app.use(express.bodyParser());
@@ -23,7 +36,7 @@ app.configure(function(){
 });
 // Routes
 
-require('./routes.js')(nano,couchdb);  // we immediately call the exported fn
+require('./routes.js')(app,nano,couchdb);  // we immediately call the exported fn
 
 app.configure('development', function(){
   app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
